@@ -1,0 +1,23 @@
+.who button.ghost {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
+  color: #8f1d13;
+  background: #fff;
+  border: 2px solid #fff;
+  font-weight: 700;
+}
+
+.who button.ghost::before {
+  content: '↪';
+  font-size: 1.15em;
+  line-height: 1;
+}
+
+.who button.ghost:hover:not(:disabled) {
+  background: #ffe9e6;
+  border-color: #ffe9e6;
+  filter: none;
+}
