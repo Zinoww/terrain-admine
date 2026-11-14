@@ -18,7 +18,7 @@ label{display:block;font-weight:600;font-size:.9rem;margin-bottom:10px}label inp
 button{font:inherit;font-weight:600;padding:9px 14px;border:0;border-radius:8px;background:var(--pri);color:#fff;cursor:pointer}button:hover:not(:disabled){filter:brightness(.92)}button:disabled{opacity:.5;cursor:default}
 @media(prefers-color-scheme:dark){button{color:#0e171c}}
 button.ghost{background:transparent;color:var(--pri);border:1px solid var(--line)}button.ghost:hover:not(:disabled){background:var(--ghost-hover);filter:none}
-.who button.ghost{color:#fff;border-color:rgba(255,255,255,.55)}.who button.ghost:hover:not(:disabled){background:rgba(255,255,255,.14)}
+.who button.ghost{color:#fff;background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.7)}.who button.ghost:hover:not(:disabled){background:rgba(255,255,255,.24)}
 button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--sig);outline-offset:2px}
 .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.filters input[type=text],.filters input:not([type]){min-width:200px}
 .tbl{width:100%;border-collapse:collapse}.tbl th{text-align:left;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:var(--mute);padding:6px 8px;border-bottom:1px solid var(--line)}
