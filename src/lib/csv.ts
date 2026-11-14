@@ -1,0 +1,26 @@
+export function parseCsv(text:string):string[][]{
+  const first=text.split(/\r?\n/)[0]??'',d=(first.match(/;/g)?.length??0)>(first.match(/,/g)?.length??0)?';':','
+  const rows:string[][]=[];let row:string[]=[],cur='',q=false
+  for(let i=0;i<text.length;i++){const c=text[i]
+    if(q){if(c==='"'){if(text[i+1]==='"'){cur+='"';i++}else q=false}else cur+=c}
+    else if(c==='"')q=true
+    else if(c===d){row.push(cur);cur=''}
+    else if(c==='\n'||c==='\r'){if(c==='\r'&&text[i+1]==='\n')i++;row.push(cur);rows.push(row);row=[];cur=''}
+    else cur+=c}
+  if(cur!==''||row.length){row.push(cur);rows.push(row)}
+  return rows.filter(r=>r.some(c=>c.trim()!==''))
+}
+export const toCsv=(rows:(string|number|null|undefined)[][])=>'\ufeff'+rows.map(r=>r.map(c=>{const s=String(c??'');return /[";\n\r]/.test(s)?`"${s.replace(/"/g,'""')}"`:s}).join(';')).join('\r\n')
+export function download(name:string,content:string){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type:'text/csv;charset=utf-8'}));a.download=name;a.click();URL.revokeObjectURL(a.href)}
+export const norm=(s:string)=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase()
+export function parseDate(s:string):string|null{
+  const t=s.trim();let m=t.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return`${m[1]}-${m[2]}-${m[3]}`
+  m=t.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/);if(m)return`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`
+  return null
+}
+export function toRecords(rows:string[][]){
+  if(!rows.length)return[]
+  const[h,...b]=rows,k=h.map(norm)
+  const g=(r:string[],...names:string[])=>{for(const n of names){const i=k.indexOf(n);if(i>=0&&r[i]&&r[i].trim())return r[i].trim()}return''}
+  return b.map(r=>({client:g(r,'client','nom'),address:g(r,'adresse','address'),city:g(r,'ville','city'),date:g(r,'date'),time:g(r,'heure','time')||'09:00',ref:g(r,'reference','ref')}))
+}
