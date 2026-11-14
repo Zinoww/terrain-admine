@@ -26,7 +26,7 @@ export default function App(){
   if(me?.role!=='admin')return <div className="login"><div className="card"><h1>Droits insuffisants</h1><p className="mute">Ce compte n'est pas administrateur.</p><button onClick={()=>supabase.auth.signOut()}>Se déconnecter</button></div></div>
   return <HashRouter><Ctx.Provider value={{profiles,me,reload:load}}><div className="shell"><aside><div className="brand">Terrain<span>Administration</span></div>
     <nav>{NAV.map(([to,l])=><NavLink key={to} to={to} end={to==='/'}>{l}</NavLink>)}</nav>
-    <div className="who">{me.full_name}<button className="ghost" onClick={()=>supabase.auth.signOut()}>Déconnexion</button></div></aside>
+    <div className="who">{me.full_name}<button className="ghost" onClick={()=>supabase.auth.signOut()}>Se déconnecter</button></div></aside>
     <main><Routes><Route path="/" element={<Dashboard/>}/><Route path="/interventions" element={<Interventions/>}/><Route path="/pv" element={<PVs/>}/><Route path="/activite" element={<Activite/>}/>
       <Route path="/stock" element={<Stock/>}/><Route path="/documents" element={<Documents/>}/><Route path="/factures" element={<Factures/>}/><Route path="/apporteurs" element={<Apporteurs/>}/><Route path="/equipe" element={<Equipe/>}/><Route path="*" element={<Navigate to="/"/>}/></Routes></main></div></Ctx.Provider></HashRouter>
 }
