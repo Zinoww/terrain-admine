@@ -5,3 +5,4 @@ Application web pour ordinateur, branchée sur le MÊME projet Supabase que l'ap
 3. `npm install` puis `npm run dev`.
 4. Se connecter avec un compte dont le rôle est « admin ».
 Tests : `npm test` (CSV/import). Build : `npm run build`.
+# terrain-admine
