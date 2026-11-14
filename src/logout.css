@@ -2,22 +2,25 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 9px;
+  min-height: 44px;
   padding: 10px 12px;
-  color: #8f1d13;
-  background: #fff;
-  border: 2px solid #fff;
+  color: #fff;
+  background: #b42318;
+  border: 2px solid #ffb4ab;
   font-weight: 700;
+  font-size: .95rem;
 }
 
 .who button.ghost::before {
   content: '↪';
-  font-size: 1.15em;
+  font-size: 1.2em;
   line-height: 1;
 }
 
 .who button.ghost:hover:not(:disabled) {
-  background: #ffe9e6;
-  border-color: #ffe9e6;
+  color: #fff;
+  background: #8f1d13;
+  border-color: #fff;
   filter: none;
 }
