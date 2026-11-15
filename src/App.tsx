@@ -15,15 +15,15 @@ function Login(){
 const NAV:[string,string][]=[['/','Tableau de bord'],['/interventions','Interventions'],['/pv','PV'],['/activite','Activité'],['/stock','Stock'],['/documents','Documents'],['/factures','Factures'],['/apporteurs','Apporteurs'],['/equipe','Équipe']]
 
 export default function App(){
-  const[s,setS]=useState<Session|null|undefined>(undefined),[profiles,setP]=useState<Prof[]>([]),[loaded,setLoaded]=useState(false)
+  const[s,setS]=useState<Session|null|undefined>(undefined),[profiles,setP]=useState<Prof[]>([]),[loaded,setLoaded]=useState(false),[loadErr,setLoadErr]=useState('')
   useEffect(()=>{supabase.auth.getSession().then(r=>setS(r.data.session));const{data}=supabase.auth.onAuthStateChange((_,x)=>setS(x));return()=>data.subscription.unsubscribe()},[])
-  const load=()=>{supabase.from('profiles').select('id,full_name,role,referral_code').order('full_name').then(r=>{setP((r.data??[]) as Prof[]);setLoaded(true)})}
+  const load=()=>{supabase.from('profiles').select('id,full_name,role,referral_code').order('full_name').then(r=>{setLoadErr(r.error?.message??'');setP((r.data??[]) as Prof[]);setLoaded(true)})}
   useEffect(()=>{if(s)load();else setLoaded(false)},[s?.user.id])
   if(s===undefined)return null
   if(!s)return <Login/>
   const me=profiles.find(p=>p.id===s.user.id)
   if(!loaded)return <p className="mute" style={{padding:24}}>Chargement…</p>
-  if(me?.role!=='admin')return <div className="login"><div className="card"><h1>Droits insuffisants</h1><p className="mute">Ce compte n'est pas administrateur.</p><button onClick={()=>supabase.auth.signOut()}>Se déconnecter</button></div></div>
+  if(me?.role!=='admin')return <div className="login"><div className="card"><h1>Droits insuffisants</h1><p className="mute">Connecté en tant que <b>{s.user.email}</b></p>{loadErr?<p className="err">Erreur de lecture du profil : {loadErr}</p>:<p className="mute">{me?`Rôle de ce compte : ${me.role}. Il faut le rôle admin.`:'Aucun profil trouvé pour ce compte.'}</p>}<button onClick={()=>supabase.auth.signOut()}>Se déconnecter</button></div></div>
   return <HashRouter><Ctx.Provider value={{profiles,me,reload:load}}><div className="shell"><aside><div className="brand">Terrain<span>Administration</span></div>
     <nav>{NAV.map(([to,l])=><NavLink key={to} to={to} end={to==='/'}>{l}</NavLink>)}</nav>
     <div className="who">{me.full_name}<button className="ghost" onClick={()=>supabase.auth.signOut()}>Se déconnecter</button></div></aside>

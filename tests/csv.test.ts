@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest'
-import {parseCsv,toCsv,parseDate,toRecords,norm} from '../lib/csv'
+import {parseCsv,toCsv,parseDate,toRecords,norm} from '../src/lib/csv'
 describe('csv',()=>{
   it('détecte ; ou , et gère les guillemets et retours à la ligne',()=>{
     expect(parseCsv('a;b;c\n1;"x;y";3')).toEqual([['a','b','c'],['1','x;y','3']])

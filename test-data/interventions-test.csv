@@ -1,0 +1,10 @@
+﻿Client;Adresse;Ville;Date;Heure;Référence
+Mme Lefèvre;12 rue de la République;Rouen;16/11/2026;08:30;TEST-X01
+M. Benali;5 rue Jeanne d'Arc;Rouen;16/11/2026;10:30;TEST-X02
+SCI Les Tilleuls;8 avenue du Mont Riboudet;Rouen;16/11/2026;14:00;TEST-X03
+Mme Garnier;20 rue des Martyrs;Elbeuf;17/11/2026;09:00;TEST-X04
+M. Dubois;3 place du Général de Gaulle;Barentin;17/11/2026;11:00;TEST-X05
+Mme Roussel;15 rue Gambetta;Darnétal;18/11/2026;09:30;TEST-X06
+Mme Petit;"Résidence Les Pins; bât. B";Mont-Saint-Aignan;19/11/2026;15:00;TEST-X07
+M. Fontaine;42 boulevard de l'Yser;Rouen;20/11/2026;08:00;TEST-X08
+Client sans date;3 rue Verte;Rouen;;10:00;TEST-X09

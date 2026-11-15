@@ -1,6 +1,7 @@
 import {useEffect,useState,createContext,useContext,type ReactNode} from 'react'
 import readXlsxFile from 'read-excel-file'
 import {supabase} from './lib/supabase'
+import {openStored} from './lib/storage'
 import {download,parseCsv,parseDate,toCsv,toRecords} from './lib/csv'
 
 export type Prof={id:string;full_name:string|null;role:string;referral_code:string|null}
@@ -11,7 +12,8 @@ const today=()=>new Date().toLocaleDateString('sv')
 const plus=(n:number)=>new Date(Date.now()+n*864e5).toLocaleDateString('sv')
 const dayOf=(s:string)=>new Date(s).toLocaleDateString('sv')
 const hhmm=(s:string)=>new Date(s).toLocaleTimeString('fr',{hour:'2-digit',minute:'2-digit'})
-const eur=(n:number)=>`${n.toFixed(2)} €`
+const eur=(n:number)=>new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(n)
+const num=(n:number)=>n.toLocaleString('fr-FR')
 const ST:[string,string][]=[['planifiee','Planifiée'],['en_cours','En cours'],['terminee','Terminée'],['a_replanifier','À replanifier']]
 const lab=(s:string)=>ST.find(x=>x[0]===s)?.[1]??s
 const REWARD=100
@@ -122,8 +124,8 @@ export function Activite(){
   const exp=()=>download(`activite-${m}.csv`,toCsv([['Technicien','Jour','Heures','Km','Frais (€)'],...(r??[]).map(a=>[nm(profiles,a.tech_id),a.day,a.hours,a.km,a.fees])]))
   return <><div className="row"><h1>Activité</h1><span><input type="month" value={m} onChange={e=>setM(e.target.value||m)}/> <button className="ghost" onClick={exp}>Exporter CSV</button></span></div><Err e={err}/>
     <div className="card"><table className="tbl"><thead><tr><th>Technicien</th><th>Jours</th><th>Heures</th><th>Km</th><th>Frais</th></tr></thead><tbody>
-      {tot.map(t=><tr key={t.p.id}><td>{t.p.full_name}</td><td>{t.j}</td><td>{t.h}</td><td>{t.km}</td><td>{eur(t.f)}</td></tr>)}</tbody></table>{r&&!tot.length&&<p className="mute">Aucune activité déclarée ce mois-ci.</p>}</div>
-    <div className="card"><h2>Détail</h2><table className="tbl"><tbody>{(r??[]).map(a=><tr key={a.tech_id+a.day}><td>{a.day}</td><td>{nm(profiles,a.tech_id)}</td><td>{a.hours} h</td><td>{a.km} km</td><td>{eur(Number(a.fees))}</td></tr>)}</tbody></table></div></>
+      {tot.map(t=><tr key={t.p.id}><td>{t.p.full_name}</td><td>{t.j}</td><td>{num(t.h)}</td><td>{num(t.km)}</td><td>{eur(t.f)}</td></tr>)}</tbody></table>{r&&!tot.length&&<p className="mute">Aucune activité déclarée ce mois-ci.</p>}</div>
+    <div className="card"><h2>Détail</h2><table className="tbl"><tbody>{(r??[]).map(a=><tr key={a.tech_id+a.day}><td>{a.day}</td><td>{nm(profiles,a.tech_id)}</td><td>{num(Number(a.hours))} h</td><td>{num(Number(a.km))} km</td><td>{eur(Number(a.fees))}</td></tr>)}</tbody></table></div></>
 }
 
 /* ---------- Équipe ---------- */
@@ -155,8 +157,9 @@ export function Stock(){
 /* ---------- Documents ---------- */
 export function Documents(){
   const{profiles}=useCtx(),{r,err}=useQ<Doc>(()=>supabase.from('documents').select('*').order('expires_on',{ascending:true,nullsFirst:false})),t=today(),soon=plus(30)
-  const view=async(p:string)=>{const{data}=await supabase.storage.from('documents').createSignedUrl(p,60);if(data)window.open(data.signedUrl,'_blank')}
-  return <><h1>Documents</h1><Err e={err}/><div className="card"><table className="tbl"><thead><tr><th>Technicien</th><th>Type</th><th>Intitulé</th><th>Expiration</th><th/></tr></thead><tbody>
+  const[vmsg,setVmsg]=useState('')
+  const view=async(p:string)=>setVmsg(await openStored('documents',p))
+  return <><h1>Documents</h1><Err e={err||vmsg}/><div className="card"><table className="tbl"><thead><tr><th>Technicien</th><th>Type</th><th>Intitulé</th><th>Expiration</th><th/></tr></thead><tbody>
     {(r??[]).map(d=><tr key={d.id}><td>{nm(profiles,d.tech_id)}</td><td>{d.type}</td><td>{d.title}</td><td>{d.expires_on?<span className={`chip ${d.expires_on<t?'a_replanifier':d.expires_on<=soon?'en_cours':'terminee'}`}>{d.expires_on}</span>:'—'}</td><td><button className="ghost" onClick={()=>view(d.file_path)}>Ouvrir</button></td></tr>)}</tbody></table>{r&&!r.length&&<p className="mute">Aucun document.</p>}</div></>
 }
 
