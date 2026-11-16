@@ -17,4 +17,9 @@ describe('csv',()=>{
     expect(r).toEqual([{client:'Martin',address:'1 rue A',city:'Rouen',date:'14/11/2026',time:'14:30',ref:'R1'}])})
   it('heure par défaut 09:00, fichier vide sans erreur',()=>{expect(toRecords(parseCsv('client;date\nA;2026-11-14'))[0].time).toBe('09:00');expect(toRecords([])).toEqual([])})
   it('norm',()=>expect(norm('  Référence ')).toBe('reference'))
+  it('SÉCURITÉ : neutralise les formules Excel (= + - @) sans toucher aux nombres',()=>{
+    const out=toCsv([['=HYPERLINK("http://x","clic")','+1+1','-2+3','@SUM(A1)','Dupont',-5,12.5,'normal; texte']])
+    const cells=parseCsv(out.slice(1))[0]
+    expect(cells.slice(0,4)).toEqual(['\'=HYPERLINK("http://x","clic")',"'+1+1","'-2+3","'@SUM(A1)"])
+    expect(cells.slice(4)).toEqual(['Dupont','-5','12.5','normal; texte'])})
 })

@@ -10,7 +10,10 @@ export function parseCsv(text:string):string[][]{
   if(cur!==''||row.length){row.push(cur);rows.push(row)}
   return rows.filter(r=>r.some(c=>c.trim()!==''))
 }
-export const toCsv=(rows:(string|number|null|undefined)[][])=>'\ufeff'+rows.map(r=>r.map(c=>{const s=String(c??'');return /[";\n\r]/.test(s)?`"${s.replace(/"/g,'""')}"`:s}).join(';')).join('\r\n')
+// Protection « injection de formule » : Excel exécute une cellule texte qui commence par = + - @ (ou tabulation).
+// On la préfixe d'une apostrophe. Les vrais nombres (type number) ne sont pas touchés.
+const safe=(c:string|number|null|undefined)=>{const s=String(c??'');return typeof c==='string'&&/^[=+\-@\t\r]/.test(s)?`'${s}`:s}
+export const toCsv=(rows:(string|number|null|undefined)[][])=>'\ufeff'+rows.map(r=>r.map(c=>{const s=safe(c);return /[";\n\r]/.test(s)?`"${s.replace(/"/g,'""')}"`:s}).join(';')).join('\r\n')
 export function download(name:string,content:string){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type:'text/csv;charset=utf-8'}));a.download=name;a.click();URL.revokeObjectURL(a.href)}
 export const norm=(s:string)=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase()
 export function parseDate(s:string):string|null{
