@@ -32,7 +32,7 @@ const Err=({e}:{e:string})=>e?<p className="err">{e}</p>:null
 const Chip=({s}:{s:string})=><span className={`chip ${s}`}>{lab(s)}</span>
 
 /* ---------- Tableau de bord ---------- */
-type Int={id:string;ref:string|null;client:string;address:string|null;city:string|null;scheduled_at:string;status:string;assigned_to:string|null}
+type Int={id:string;ref:string|null;client:string;address:string|null;city:string|null;scheduled_at:string;status:string;assigned_to:string|null;notes:string|null;details?:Record<string,string>|null}
 type Doc={id:string;tech_id:string;type:string;title:string;issued_on:string|null;expires_on:string|null;file_path:string}
 type Stk={id:string;name:string;barcode:string;qty:number;assigned_to:string|null}
 export function Dashboard(){
@@ -56,6 +56,7 @@ export function Dashboard(){
 export function Interventions(){
   const{profiles}=useCtx(),{r,err,load}=useQ<Int>(()=>supabase.from('interventions').select('*').order('scheduled_at',{ascending:false}).limit(2000))
   const[q,setQ]=useState(''),[st,setSt]=useState(''),[tech,setTech]=useState(''),[from,setFrom]=useState(''),[to,setTo]=useState(''),[modal,setModal]=useState<''|'new'|'import'>(''),[msg,setMsg]=useState('')
+  const[detail,setDetail]=useState<Int|null>(null)
   const rows=(r??[]).filter(i=>(!st||i.status===st)&&(!tech||(tech==='none'?!i.assigned_to:i.assigned_to===tech))&&(!from||dayOf(i.scheduled_at)>=from)&&(!to||dayOf(i.scheduled_at)<=to)&&`${i.client} ${i.city} ${i.ref} ${i.address}`.toLowerCase().includes(q.toLowerCase()))
   const upd=async(id:string,x:Partial<Int>)=>{const{error}=await supabase.from('interventions').update(x).eq('id',id);setMsg(error?.message??'');load()}
   const del=async(id:string)=>{if(!confirm('Supprimer cette intervention ?'))return;const{error}=await supabase.from('interventions').delete().eq('id',id);setMsg(error?.message??'');load()}
@@ -70,28 +71,59 @@ export function Interventions(){
       {rows.map(i=><tr key={i.id}><td>{dayOf(i.scheduled_at)}<div className="mute">{hhmm(i.scheduled_at)}</div></td><td><b>{i.client}</b><div className="mute">{i.ref}</div></td><td>{[i.address,i.city].filter(Boolean).join(', ')}</td>
         <td><TechSel v={i.assigned_to} set={x=>upd(i.id,{assigned_to:x})} blank="Non assignée"/></td>
         <td><select value={i.status} onChange={e=>upd(i.id,{status:e.target.value})}>{ST.map(([k,l])=><option key={k} value={k}>{l}</option>)}</select></td>
-        <td><button className="ghost" onClick={()=>del(i.id)}>Supprimer</button></td></tr>)}</tbody></table>
+        <td><button className="ghost" onClick={()=>setDetail(i)}>Détails</button> <button className="ghost" onClick={()=>del(i.id)}>Supprimer</button></td></tr>)}</tbody></table>
       {r&&!rows.length&&<p className="mute">Aucune intervention.</p>}<p className="mute">{rows.length} ligne(s)</p></div>
     {modal==='new'&&<Modal title="Nouvelle intervention" onClose={()=>setModal('')}><NewInt onDone={done}/></Modal>}
-    {modal==='import'&&<Modal title="Importer des interventions" onClose={()=>setModal('')}><Import onDone={done}/></Modal>}</>
+    {modal==='import'&&<Modal title="Importer des interventions" onClose={()=>setModal('')}><Import onDone={done}/></Modal>}
+    {detail&&<Modal title={`Détails · ${detail.client}`} onClose={()=>setDetail(null)}>
+      <p><b>Adresse :</b> {[detail.address,detail.city].filter(Boolean).join(', ')||'—'}</p>
+      {detail.ref&&<p><b>Référence dossier :</b> {detail.ref}</p>}
+      {detail.notes&&<p><b>Notes :</b> {detail.notes}</p>}
+      {detail.details&&Object.entries(detail.details).map(([key,value])=><p key={key}><b>{key} :</b> {value||'—'}</p>)}
+      {!detail.details&&!detail.notes&&<p className="mute">Aucun détail complémentaire.</p>}
+    </Modal>}</>
 }
 function NewInt({onDone}:{onDone:()=>void}){
-  const blank={ref:'',client:'',address:'',city:'',date:today(),time:'09:00',assigned:null as string|null,notes:''},[f,setF]=useState(blank),[err,setErr]=useState('')
+  const blank={ref:'',client:'',address:'',city:'',postal:'',date:today(),time:'09:00',assigned:null as string|null,notes:'',vid:'',energy:'',steps:'Planifié',ecs:'',display:'',department:'',enterprise:'',residentName:'',residentFirstName:'',email:'',phone:'',residence:'',building:'',floor:'',apartment:'',heating:'',installationType:'',housingType:'',surface:'',radiators:'',statusKo:'',motifKo:'',motifSavKo:''},[f,setF]=useState(blank),[err,setErr]=useState('')
   const inp=(k:'ref'|'client'|'address'|'city'|'notes',l:string)=><label>{l}<input value={f[k]} onChange={e=>setF({...f,[k]:e.target.value})}/></label>
   const save=async()=>{if(!f.client.trim())return setErr('Le client est obligatoire.')
-    const{error}=await supabase.from('interventions').insert({ref:f.ref||null,client:f.client,address:f.address||null,city:f.city||null,scheduled_at:new Date(`${f.date}T${f.time}`).toISOString(),assigned_to:f.assigned,notes:f.notes||null});if(error)return setErr(error.message);onDone()}
-  return <>{inp('client','Client')}{inp('ref','Référence')}{inp('address','Adresse')}{inp('city','Ville')}
+    const details={vid:f.vid||null,type_energie:f.energy||null,steps:f.steps||null,option_ecs:f.ecs||null,departement:f.department||null,option_afficheur:f.display||null,entreprise_technicien:f.enterprise||null,nom_occupant:f.residentName||null,prenom_occupant:f.residentFirstName||null,email_occupant:f.email||null,telephone_mobile_occupant:f.phone||null,residence:f.residence||null,escalier_batiment:f.building||null,etage:f.floor||null,numero_logement:f.apartment||null,type_chauffage:f.heating||null,type:f.installationType||null,type_logement:f.housingType||null,code_postal:f.postal||null,surface_logement:f.surface||null,nombre_radiateurs:f.radiators||null,statut_ko:f.statusKo||null,motif_ko:f.motifKo||null,motif_sav_ko:f.motifSavKo||null}
+    const cleanDetails=Object.fromEntries(Object.entries(details).filter(([,v])=>v!==null))
+    const{error}=await supabase.from('interventions').insert({ref:f.ref||null,client:f.client,address:f.address||null,city:f.city||null,postal_code:f.postal||null,scheduled_at:new Date(`${f.date}T${f.time}`).toISOString(),assigned_to:f.assigned,notes:f.notes||null,details:cleanDetails});if(error)return setErr(error.message);onDone()}
+  return <><h3>Intervention</h3>{inp('client','Client')}{inp('ref','Référence dossier')}{inp('address','Adresse logement')}{inp('city','Ville')}
+    <label>Code postal<input value={f.postal} onChange={e=>setF({...f,postal:e.target.value})}/></label>
     <div className="grid2"><label>Date<input type="date" value={f.date} onChange={e=>setF({...f,date:e.target.value})}/></label><label>Heure<input type="time" value={f.time} onChange={e=>setF({...f,time:e.target.value})}/></label></div>
-    <label>Technicien<TechSel v={f.assigned} set={x=>setF({...f,assigned:x})} blank="Non assignée"/></label>{inp('notes','Notes')}<Err e={err}/><button onClick={save}>Créer</button></>
+    <label>Technicien<TechSel v={f.assigned} set={x=>setF({...f,assigned:x})} blank="Non assignée"/></label>
+    <h3>Logement</h3><div className="grid2">
+      <label>VID<input value={f.vid} onChange={e=>setF({...f,vid:e.target.value})}/></label><label>Type d'énergie<input value={f.energy} onChange={e=>setF({...f,energy:e.target.value})}/></label>
+      <label>Statut / steps<input value={f.steps} onChange={e=>setF({...f,steps:e.target.value})}/></label><label>Option ECS<input value={f.ecs} onChange={e=>setF({...f,ecs:e.target.value})}/></label>
+      <label>Option afficheur<input value={f.display} onChange={e=>setF({...f,display:e.target.value})}/></label><label>Département<input value={f.department} onChange={e=>setF({...f,department:e.target.value})}/></label>
+      <label>Entreprise technicien<input value={f.enterprise} onChange={e=>setF({...f,enterprise:e.target.value})}/></label><label>Résidence<input value={f.residence} onChange={e=>setF({...f,residence:e.target.value})}/></label>
+      <label>Escalier / bâtiment<input value={f.building} onChange={e=>setF({...f,building:e.target.value})}/></label><label>Étage<input value={f.floor} onChange={e=>setF({...f,floor:e.target.value})}/></label>
+      <label>N° logement<input value={f.apartment} onChange={e=>setF({...f,apartment:e.target.value})}/></label><label>Type chauffage<input value={f.heating} onChange={e=>setF({...f,heating:e.target.value})}/></label>
+      <label>Type<input value={f.installationType} onChange={e=>setF({...f,installationType:e.target.value})}/></label><label>Type logement<input value={f.housingType} onChange={e=>setF({...f,housingType:e.target.value})}/></label>
+      <label>Surface logement<input value={f.surface} onChange={e=>setF({...f,surface:e.target.value})}/></label><label>Nombre radiateurs<input value={f.radiators} onChange={e=>setF({...f,radiators:e.target.value})}/></label>
+    </div><h3>Occupant</h3><div className="grid2">
+      <label>Nom occupant<input value={f.residentName} onChange={e=>setF({...f,residentName:e.target.value})}/></label><label>Prénom occupant<input value={f.residentFirstName} onChange={e=>setF({...f,residentFirstName:e.target.value})}/></label>
+      <label>Email occupant<input type="email" value={f.email} onChange={e=>setF({...f,email:e.target.value})}/></label><label>Téléphone mobile occupant<input value={f.phone} onChange={e=>setF({...f,phone:e.target.value})}/></label>
+    </div><h3>Commentaires et anomalies</h3>
+    <label>Statut KO<input value={f.statusKo} onChange={e=>setF({...f,statusKo:e.target.value})}/></label><label>Motif KO<input value={f.motifKo} onChange={e=>setF({...f,motifKo:e.target.value})}/></label><label>Motif SAV KO<input value={f.motifSavKo} onChange={e=>setF({...f,motifSavKo:e.target.value})}/></label>
+    {inp('notes','Commentaire technicien')}<Err e={err}/><button onClick={save}>Créer</button></>
 }
 function Import({onDone}:{onDone:()=>void}){
   const[recs,setRecs]=useState<ReturnType<typeof toRecords>>([]),[tech,setTech]=useState<string|null>(null),[err,setErr]=useState('')
   const onFile=async(f?:File)=>{if(!f)return;setErr('')
     try{const rows=/\.xlsx$/i.test(f.name)?(await readXlsxFile(f)).map(r=>r.map(c=>c instanceof Date?c.toLocaleDateString('sv'):String(c??''))):parseCsv(await f.text());setRecs(toRecords(rows))}catch{setErr('Fichier illisible (.xlsx ou .csv).')}}
   const good=recs.filter(r=>r.client&&parseDate(r.date))
-  const go=async()=>{const{error}=await supabase.from('interventions').insert(good.map(r=>({ref:r.ref||null,client:r.client,address:r.address||null,city:r.city||null,
-    scheduled_at:new Date(`${parseDate(r.date)}T${/^\d{1,2}:\d{2}/.test(r.time)?r.time.padStart(5,'0'):'09:00'}`).toISOString(),assigned_to:tech})));if(error)return setErr(error.message);onDone()}
-  return <><p className="mute">Colonnes reconnues : client, adresse, ville, date (JJ/MM/AAAA), heure (hh:mm), référence.</p>
+  const go=async()=>{const{error}=await supabase.from('interventions').insert(good.map(r=>{
+    const details=r.details??{}
+    const start=r.time.trim()
+    const time=/^\d{1,2}:\d{2}/.test(start)?start.padStart(5,'0'): /^\d{1,2}$/.test(start)?`${start.padStart(2,'0')}:00`:'09:00'
+    return{ref:r.ref||null,client:r.client,address:r.address||null,city:r.city||null,
+    postal_code:details['code postal']||null,
+    scheduled_at:new Date(`${parseDate(r.date)}T${time}`).toISOString(),assigned_to:tech,details:Object.keys(details).length?details:null}
+  }));if(error)return setErr(error.message);onDone()}
+  return <><p className="mute">Colonnes reconnues : client/occupant, adresse logement/adresse, ville, date RDV, heure de début, référence dossier, ainsi que tous les autres champs détaillés.</p>
     <label>Fichier .xlsx ou .csv<input type="file" accept=".xlsx,.csv" onChange={e=>onFile(e.target.files?.[0])}/></label>
     <label>Assigner à<TechSel v={tech} set={setTech} blank="Non assignée"/></label>
     {recs.length>0&&<p><b>{good.length}</b> ligne(s) valide(s) sur {recs.length}{good.length<recs.length&&<span className="err"> — {recs.length-good.length} ignorée(s) (client ou date manquant)</span>}</p>}

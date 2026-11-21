@@ -18,12 +18,31 @@ export function download(name:string,content:string){const a=document.createElem
 export const norm=(s:string)=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase()
 export function parseDate(s:string):string|null{
   const t=s.trim();let m=t.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return`${m[1]}-${m[2]}-${m[3]}`
-  m=t.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/);if(m)return`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`
+  if(/^\d{10}$/.test(t)){const d=new Date(Number(t)*1000);if(!Number.isNaN(d.getTime()))return d.toISOString().slice(0,10)}
+  m=t.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/)
+  if(m){
+    if(t.includes('/')&&Number(m[2])>12)return`${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`
+    if(t.includes('/')&&Number(m[1])>12)return`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`
+    if(t.includes('/'))return`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`
+    return`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`
+  }
+  m=t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+  if(m&&Number(m[1])>12)return`${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`
+  if(m)return`${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`
   return null
 }
 export function toRecords(rows:string[][]){
   if(!rows.length)return[]
   const[h,...b]=rows,k=h.map(norm)
   const g=(r:string[],...names:string[])=>{for(const n of names){const i=k.indexOf(n);if(i>=0&&r[i]&&r[i].trim())return r[i].trim()}return''}
-  return b.map(r=>({client:g(r,'client','nom'),address:g(r,'adresse','address'),city:g(r,'ville','city'),date:g(r,'date'),time:g(r,'heure','time')||'09:00',ref:g(r,'reference','ref')}))
+  return b.map(r=>{
+    const record:any={client:g(r,'client','nom','nom occupant','occupant logement'),address:g(r,'adresse logement','adresse','address'),city:g(r,'ville','city'),date:g(r,'date rdv','date du rendez-vous (timestamp)','date'),time:g(r,'heure de debut','heure de début','heure','time')||'09:00',ref:g(r,'reference dossier','référence dossier','reference','ref')}
+    const details:Record<string,string>={}
+    for(let i=0;i<k.length;i++){
+      const key=k[i],value=(r[i]??'').trim()
+      if(value&&![ 'client','nom','adresse','address','ville','city','date','heure','time','reference','ref' ].includes(key))details[key]=value
+    }
+    if(Object.keys(details).length)record.details=details
+    return record
+  })
 }
